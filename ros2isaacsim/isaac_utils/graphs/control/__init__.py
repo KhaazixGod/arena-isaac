@@ -1,5 +1,7 @@
 import os
-import arena_simulation_setup.tree.Robot
+
+import arena_robots.Robot
+
 from .differential import differential
 
 
@@ -22,7 +24,7 @@ class Control:
         Returns:
             bool: True if the graph was created successfully, False otherwise.
         """
-        robot = arena_simulation_setup.tree.Robot.Robot(robot_model)
+        robot = arena_robots.Robot.Robot(robot_model)
 
         for controller_name, config in robot.control['controller_manager']['ros__parameters'].items():
             if isinstance(config, dict) and config.get('type') == 'diff_drive_controller/DiffDriveController':
