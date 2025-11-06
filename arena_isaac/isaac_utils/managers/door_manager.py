@@ -285,7 +285,7 @@ class DoorManager:
             dy = end_v[1] - start_v[1]
             axis = np.array([dx, dy, 0])
             axis = axis / (np.linalg.norm(axis) + 1e-8)
-            angle = np.arctan2(axis[1], axis[0])
+            angle = np.arctan2(axis[1], axis[0]) + np.pi / 2
             self._doors[prim_path] = {
                 "prim": prim,
                 "kind": kind,
