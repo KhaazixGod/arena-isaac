@@ -1,8 +1,9 @@
 import yaml
 import random
 
+
 def load_yaml_file(agents: str, zones: str):
-    
+
     with open(agents) as f1:
         agent_data = yaml.load(f1, Loader=yaml.SafeLoader)
 
@@ -25,13 +26,14 @@ def load_yaml_file(agents: str, zones: str):
         room["horizon"] = horizon
         room["vertical"] = vertical
         room_list.append(room)
-    
+
     return num_agents, min_vel, max_vel, room_list
+
 
 def load_config_files(agents: str, zones: str):
 
     num_agents, min_vel, max_vel, room_list = load_yaml_file(agents, zones)
-    
+
     agent_data = {}
 
     for agent_id in range(num_agents):
@@ -43,17 +45,17 @@ def load_config_files(agents: str, zones: str):
             room_goal = random.choice(room_list)
 
         start_point = [random.uniform(room_start["origin"][0],
-                                         room_start["origin"][0] + room_start["horizon"]), 
+                                      room_start["origin"][0] + room_start["horizon"]),
                        random.uniform(room_start["origin"][1],
-                                         room_start["origin"][1] + room_start["vertical"]),
+                                      room_start["origin"][1] + room_start["vertical"]),
                        0.0]
-        
+
         goal_point = [random.uniform(room_goal["origin"][0],
-                                         room_goal["origin"][0] + room_goal["horizon"]), 
+                                     room_goal["origin"][0] + room_goal["horizon"]),
                       random.uniform(room_goal["origin"][1],
-                                         room_goal["origin"][1] + room_goal["vertical"]),
+                                     room_goal["origin"][1] + room_goal["vertical"]),
                       0.0]
-        
+
         orientation = random.uniform(0, 180)
 
         vel = random.uniform(min_vel, max_vel)
@@ -69,18 +71,17 @@ def load_config_files(agents: str, zones: str):
         }
 
     # Writing agent data to a YAML file
-    with open('/home/kuro/isaacsim4.2_ws/src/ros2isaacsim/isaac_utils/config/agent_data_gen.yaml', 'w') as file:
+    with open('/home/kuro/isaacsim4.2_ws/src/arena_isaac/isaac_utils/config/agent_data_gen.yaml', 'w') as file:
         yaml.dump(agent_data, file, default_flow_style=False)
 
     print("Agent data has been generated")
 
 
-
 def main():
-    agent_path = "/home/kuro/isaacsim4.2_ws/src/ros2isaacsim/isaac_utils/config/agents.yaml"
-    zone_path = "/home/kuro/isaacsim4.2_ws/src/ros2isaacsim/isaac_utils/config/zones.yaml"
+    agent_path = "/home/kuro/isaacsim4.2_ws/src/arena_isaac/isaac_utils/config/agents.yaml"
+    zone_path = "/home/kuro/isaacsim4.2_ws/src/arena_isaac/isaac_utils/config/zones.yaml"
     load_config_files(agent_path, zone_path)
+
 
 if __name__ == "__main__":
     main()
-

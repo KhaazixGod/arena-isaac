@@ -1,7 +1,8 @@
 import yaml
 
+
 def load_yaml_file(agents_gen_data: str):
-    
+
     with open(agents_gen_data) as f1:
         agent_data = yaml.load(f1, Loader=yaml.SafeLoader)
 
@@ -18,8 +19,9 @@ def load_yaml_file(agents_gen_data: str):
 
         print(type(velocity))
 
+
 def main():
-    load_yaml_file("/home/kuro/isaacsim4.2_ws/src/ros2isaacsim/isaac_utils/config/agent_data_gen.yaml")
+    load_yaml_file("/home/kuro/isaacsim4.2_ws/src/arena_isaac/isaac_utils/config/agent_data_gen.yaml")
 
 
 if __name__ == "__main__":

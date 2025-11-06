@@ -29,10 +29,9 @@ def main(args=None):
 
     pedestrian_client = SpawnPedestrians()
 
-    agents_gen_data_path = "/home/brainfucker/Downloads/arena-isaac/src/ros2isaacsim/isaac_utils/config/agent_data_gen.yaml"
+    agents_gen_data_path = "/home/brainfucker/Downloads/arena-isaac/src/arena_isaac/isaac_utils/config/agent_data_gen.yaml"
     with open(agents_gen_data_path) as f:
         agent_data = yaml.load(f, Loader=yaml.SafeLoader)
-    
 
     people = []
     for agent in agent_data.values():

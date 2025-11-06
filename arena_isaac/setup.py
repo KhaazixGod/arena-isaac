@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 import os
 from glob import glob
 
-package_name = 'ros2isaacsim'
+package_name = 'arena_isaac'
 
 setup(
     name=package_name,
@@ -23,12 +23,12 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "run_isaacsim=ros2isaacsim.run_isaacsim:main",
-            "convert_urdf_usd=ros2isaacsim.convert_urdf_usd:main",
-            'navigation_controller = ros2isaacsim.navigation_controller:main',
-            'sdf_to_urdf=ros2isaacsim.SdftoUrdf:main',
-            'agent_rl=ros2isaacsim.agent_RL:main',
-            "client_pub_ped=ros2isaacsim.client_publisher:main",
-            ],
+            "run_isaacsim=arena_isaac.run_isaacsim:main",
+            "convert_urdf_usd=arena_isaac.convert_urdf_usd:main",
+            'navigation_controller = arena_isaac.navigation_controller:main',
+            'sdf_to_urdf=arena_isaac.SdftoUrdf:main',
+            'agent_rl=arena_isaac.agent_RL:main',
+            "client_pub_ped=arena_isaac.client_publisher:main",
+        ],
     },
 )
