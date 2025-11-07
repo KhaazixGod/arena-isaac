@@ -9,10 +9,9 @@ setup(
     version='0.0.0',
     packages=find_packages(exclude=['test']),
     data_files=[
-        ('share/ament_index/resource_index/packages',
-            ['resource/' + package_name]),
+        ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        (os.path.join('share', package_name), glob('launch/*.launch.py')),
+        (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -20,7 +19,9 @@ setup(
     maintainer_email='anhddhe180559@fpt.edu.vn',
     description='TODO: Package description',
     license='TODO: License declaration',
-    tests_require=['pytest'],
+    scripts=[
+        'scripts/isaac_python.sh',
+    ],
     entry_points={
         'console_scripts': [
             "run_isaacsim=arena_isaac.run_isaacsim:main",

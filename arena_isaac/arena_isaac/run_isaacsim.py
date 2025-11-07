@@ -1,5 +1,6 @@
 # fmt: off
 
+
 # preload attrs
 import arena_simulation_setup
 import arena_simulation_setup.utils.cattrs
@@ -8,7 +9,10 @@ import arena_simulation_setup.utils.cattrs
 from isaacsim import SimulationApp
 
 # Setting the config for simulation and make an simulation.
-CONFIG = {"renderer": "Wireframe", "headless": False}
+CONFIG = {
+    "renderer": "Wireframe",
+    "headless": False,
+}
 #import parent directory
 import sys
 from pathlib import Path
@@ -199,6 +203,9 @@ def main(args=None):
     Main function to initialize the simulation, create the ROS 2 node,
     and run the simulation loop.
     """
+
+    # Handle log level if provided in args
+
     # Create the ROS 2 controller node. This also calls rclpy.init().
     controller = create_controller()
     world.reset()
