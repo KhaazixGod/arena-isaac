@@ -12,7 +12,7 @@ def tf(
     graph_path: str,
     prim_path: str,
     tf_prefix: str,
-    throttle: int = 300,
+    throttle: int = 10,
 ) -> bool:
     """
     Creates an OmniGraph Action Graph to publish tf subtree of a given prim.
