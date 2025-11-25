@@ -4,13 +4,13 @@ import os
 import numpy as np
 import omni
 from omni.isaac.core import World
-from omni.isaac.core.objects import FixedCuboid
 from omni.isaac.core.utils.rotations import euler_angles_to_quat
 from pxr import Gf
 
 from isaac_utils.managers.door_manager import door_manager
-from isaac_utils.utils.geom import Translation
+from isaac_utils.utils.geom import Rotation, Scale, Translation
 from isaac_utils.utils.material import Material
+from isaac_utils.utils.mesh import create_cube
 from isaac_utils.utils.path import world_path
 from isaac_utils.utils.prim import ensure_path
 from isaacsim_msgs.msg import Door
@@ -75,32 +75,22 @@ def spawn_door(door: Door) -> bool:
     center = (start + end) / 2
     thickness = door.thickness
     height = end[2] - start[2]
-    length = np.linalg.norm((end - start)[:2])
+    length = float(np.linalg.norm((end - start)[:2]))
     angle = math.atan2(end[1] - start[1], end[0] - start[0])
-    scale = Gf.Vec3f(length, thickness, height)
 
     # create door
     stage = omni.usd.get_context().get_stage()
-    world = World.instance()
 
-    # Generate unique name and check if object already exists
-    unique_name = prim_path.replace('/', '_') + f"_{id(door)}"
+    existing_object = stage.GetPrimAtPath(prim_path)
+    if existing_object is not None:
+        stage.RemovePrim(prim_path)
 
-    # Check if an object with this name already exists and remove it
-    try:
-        existing_object = world.scene.get_object(unique_name)
-        if existing_object is not None:
-            world.scene.remove_object(unique_name)
-    except Exception:
-        pass  # Object doesn't exist, which is fine
-
-    world.scene.add(FixedCuboid(
+    create_cube(
         prim_path=prim_path,
-        name=unique_name,
-        position=center,
-        scale=scale,
-        orientation=euler_angles_to_quat([0, 0, angle]),
-    ))
+        position=Translation(*center),
+        scale=Scale(length, thickness, height),
+        rotation=Rotation.parse([0, 0, angle]),
+    )
 
     # Diagnostic: list prims under the door path
     try:

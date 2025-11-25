@@ -2,6 +2,7 @@
 
 
 # preload attrs
+import os
 import arena_simulation_setup
 import arena_simulation_setup.utils.cattrs
 
@@ -209,6 +210,14 @@ def main(args=None):
     # Create the ROS 2 controller node. This also calls rclpy.init().
     controller = create_controller()
     world.reset()
+
+    # set photoreal settings
+    import isaac_utils.config.photoreal as photoreal
+    if os.environ.get('RENDER_PRESET', 'photoreal') != 'boring':
+        photoreal.PRESET_PHOTOREAL.apply()
+    else:
+        photoreal.PRESET_DEFAULT.apply()
+
     SimulationContext().play()
 
     # Initialize simulator

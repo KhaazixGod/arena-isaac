@@ -1,15 +1,11 @@
-import os
-
 import omni
-from omni.isaac.core import World
-from omni.isaac.core.objects import FixedCuboid
-from pxr import Gf
 
+from isaac_utils.utils.geom import Scale, Translation
 from isaac_utils.utils.material import Material
+from isaac_utils.utils.mesh import create_cube
 from isaac_utils.utils.path import world_path
 from isaacsim_msgs.msg import Floor
 from isaacsim_msgs.srv import SpawnFloors
-from isaac_utils.utils.geom import Translation
 
 from .utils import Service, on_exception
 
@@ -20,16 +16,16 @@ def spawn_floor(floor: Floor) -> bool:
     prim_path = world_path(floor.name)
     x_len = floor.x_length
     y_len = floor.y_length
-    pos = Translation.parse(floor.pos).Vec3d()
+    height = 0.01
+    pos = Translation.parse(floor.pos)
+    pos.z += height / 2.0
 
-    world = World.instance()
-    scale = Gf.Vec3f(x_len, y_len, 0.01)
-    world.scene.add(FixedCuboid(
+    scale = Scale(x_len, y_len, height)
+    create_cube(
         prim_path=prim_path,
-        name=os.path.basename(prim_path),
         scale=scale,
         position=pos,
-    ))
+    )
 
     if (material := Material.from_msg(floor.material)):
         material.bind_to(prim_path)
