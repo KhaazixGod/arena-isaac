@@ -220,11 +220,6 @@ def main(args=None):
 
     SimulationContext().play()
 
-    # Initialize simulator
-    from task_generator.simulators.sim.isaac_simulator import IsaacSimulator
-
-    simulator = IsaacSimulator(namespace="")
-
     try:
         # Main simulation loop
         while simulation_app.is_running():
