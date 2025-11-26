@@ -60,6 +60,9 @@ def tf(
     prefix_transform.attribute('topic', internal_tf_topic)
     prefix_transform.create_attribute('inputs:name', 'string')
     prefix_transform.attribute('name', prefixer_node_name)
+    prefix_transform.create_attribute('inputs:timestamp', 'double')
+    read_simulation_time.connect('simulationTime', prefix_transform, 'timestamp')
+
     prefix_transform.attribute('script', PREFIX_SCRIPT)
 
     return graph.execute(controller)
@@ -77,55 +80,56 @@ def setup(db: og.Database):
 
     try:
         rclpy.init()
-        db.internal_state.rclpy_was_shutdown = True
+        db.per_instance_state.rclpy_was_shutdown = True
     except:
-        db.internal_state.rclpy_was_shutdown = False
+        db.per_instance_state.rclpy_was_shutdown = False
 
-    db.internal_state.node = rclpy.create_node(node_name)
-    db.internal_state.last_message = None
+    db.per_instance_state.node = rclpy.create_node(node_name)
+    db.per_instance_state.last_message = None
 
     def tf_callback(msg):
-        db.internal_state.last_message = msg
+        db.per_instance_state.last_message = msg
 
     input_topic = db.inputs.topic
     if not input_topic:
         return False
 
-    db.internal_state.subscriber = db.internal_state.node.create_subscription(
+    db.per_instance_state.subscriber = db.per_instance_state.node.create_subscription(
         TFMessage,
         input_topic,
         tf_callback,
         10)
 
-    db.internal_state.publisher = db.internal_state.node.create_publisher(
+    db.per_instance_state.publisher = db.per_instance_state.node.create_publisher(
         TFMessage,
         "/tf",
         10)
 
-    db.internal_state.node.get_logger().info(
+    db.per_instance_state.node.get_logger().info(
         f"'{node_name}' active. Subscribed to '{input_topic}', publishing to '/tf'."
     )
 
 def cleanup(db: og.Database):
-    if db.internal_state.node:
-        db.internal_state.node.get_logger().info("Shutting down tf_prefixer node.")
-        db.internal_state.node.destroy_node()
-        db.internal_state.node = None
-    if db.internal_state.rclpy_was_shutdown:
+    if db.per_instance_state.node:
+        db.per_instance_state.node.get_logger().info("Shutting down tf_prefixer node.")
+        db.per_instance_state.node.destroy_node()
+        db.per_instance_state.node = None
+    if db.per_instance_state.rclpy_was_shutdown:
         rclpy.shutdown()
 
 def compute(db: og.Database):
-    node = db.internal_state.node
+    node = db.per_instance_state.node
     if not node or not rclpy.ok():
         return True
 
     rclpy.spin_once(node, timeout_sec=0)
 
-    if db.internal_state.last_message is not None:
-        incoming_message = db.internal_state.last_message
-        db.internal_state.last_message = None
+    if db.per_instance_state.last_message is not None:
+        incoming_message = db.per_instance_state.last_message
+        db.per_instance_state.last_message = None
 
         prefix = db.inputs.prefix
+        timestamp = db.inputs.timestamp
 
         modified_message = TFMessage()
         for transform in incoming_message.transforms:
@@ -135,11 +139,14 @@ def compute(db: og.Database):
             if prefix:
                 new_transform.header.frame_id = os.path.join(prefix, transform.header.frame_id)
                 new_transform.child_frame_id = os.path.join(prefix, transform.child_frame_id)
+                if timestamp:
+                    new_transform.header.stamp.sec = int(timestamp)
+                    new_transform.header.stamp.nanosec = int((timestamp - int(timestamp)) * 1e9)
 
             modified_message.transforms.append(new_transform)
 
         if modified_message.transforms:
-            db.internal_state.publisher.publish(modified_message)
+            db.per_instance_state.publisher.publish(modified_message)
 
     return True
 """
