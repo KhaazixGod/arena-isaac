@@ -1,11 +1,9 @@
 import math
 import os
 
+import carb
 import numpy as np
 import omni
-from omni.isaac.core import World
-from omni.isaac.core.utils.rotations import euler_angles_to_quat
-from pxr import Gf
 
 from isaac_utils.managers.door_manager import door_manager
 from isaac_utils.utils.geom import Rotation, Scale, Translation
@@ -25,41 +23,11 @@ except Exception:
     _LOGGER = None
 
 
-def _log_debug(msg: str):
-    try:
-        if _LOGGER:
-            _LOGGER.debug(msg)
-            return
-    except Exception:
-        pass
-    print(msg)
-
-
-def _log_info(msg: str):
-    try:
-        if _LOGGER:
-            _LOGGER.info(msg)
-            return
-    except Exception:
-        pass
-    print(msg)
-
-
-def _log_warn(msg: str):
-    try:
-        if _LOGGER:
-            _LOGGER.warn(msg)
-            return
-    except Exception:
-        pass
-    print(msg)
-
-
 @on_exception(False)
 def spawn_door(door: Door) -> bool:
     # Get service attributes
     prim_path = world_path(door.name)
-    _log_debug(f"DEBUG SpawnDoor called for '{door.name}' -> prim_path: {prim_path}")
+    carb.log_verbose(f"DEBUG SpawnDoor called for '{door.name}' -> prim_path: {prim_path}")
 
     # Ensure parent path exists so creation won't fail silently
     try:
@@ -95,14 +63,14 @@ def spawn_door(door: Door) -> bool:
     # Diagnostic: list prims under the door path
     try:
         created = stage.GetPrimAtPath(prim_path)
-        _log_debug(f"DEBUG SpawnDoor: prim at {prim_path} valid={bool(created and created.IsValid())}")
+        carb.log_verbose(f"DEBUG SpawnDoor: prim at {prim_path} valid={bool(created and created.IsValid())}")
         # list any prims that start with this path
         found = []
         for p in stage.Traverse():
             pstr = str(p.GetPath())
             if pstr.startswith(str(prim_path)):
                 found.append(pstr)
-        _log_debug(f"DEBUG SpawnDoor: prims under {prim_path}: {found}")
+        carb.log_verbose(f"DEBUG SpawnDoor: prims under {prim_path}: {found}")
         # If create resulted in a deeper prim, pick the first found prim as door_prim_path
         door_prim_path = prim_path if (created and created.IsValid()) else (found[0] if found else prim_path)
     except Exception as e:
@@ -115,10 +83,11 @@ def spawn_door(door: Door) -> bool:
 
     # Register the actual prim path with DoorManager
     try:
-        _log_info(f"DEBUG SpawnDoor: registering door prim with DoorManager: {door_prim_path}")
-        door_manager.add_door(door_prim_path, kind)
+        carb.log_info(f"DEBUG SpawnDoor: registering door prim with DoorManager: {door_prim_path}")
+        door_manager.register_door(door_prim_path, kind, start, end)
     except Exception as e:
-        _log_warn(f"DEBUG SpawnDoor: failed to register door: {e}")
+        import traceback
+        carb.log_error(f"SpawnDoor: failed to register door: {e}\n{traceback.format_exc()}")
         return False
 
     return True

@@ -14,8 +14,8 @@ def move_prim(name: str, pose: Pose) -> bool:
 
     geom.move(
         prim_path=prim_path,
-        translation=geom.Translation.parse(pose.position) if pose else None,
-        rotation=geom.Rotation.parse(pose.orientation) if pose else None,
+        translation=geom.Translation.parse(pose.position),
+        rotation=geom.Rotation.parse(pose.orientation),
     )
 
     return True
@@ -23,7 +23,13 @@ def move_prim(name: str, pose: Pose) -> bool:
 
 @on_exception(False)
 def scale_prim(name: str, scale: Scale) -> bool:
-    # TODO
+    prim_path = world_path(name)
+
+    geom.rescale(
+        prim_path=prim_path,
+        scale=geom.Scale.parse(scale),
+    )
+
     return True
 
 

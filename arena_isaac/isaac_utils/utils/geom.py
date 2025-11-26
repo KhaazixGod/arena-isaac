@@ -20,6 +20,20 @@ class Translation:
     y: float
     z: float
 
+    def __add__(self, other: Translation) -> Translation:
+        return Translation(
+            x=self.x + other.x,
+            y=self.y + other.y,
+            z=self.z + other.z,
+        )
+
+    def __mul__(self, other: float) -> Translation:
+        return Translation(
+            x=self.x * other,
+            y=self.y * other,
+            z=self.z * other,
+        )
+
     def tuple(self) -> typing.Tuple[float, float, float]:
         return self.x, self.y, self.z
 
@@ -56,6 +70,22 @@ class Rotation:
     x: float
     y: float
     z: float
+
+    def __add__(self, other: Rotation) -> Rotation:
+        return Rotation(
+            w=self.w + other.w,
+            x=self.x + other.x,
+            y=self.y + other.y,
+            z=self.z + other.z,
+        )
+
+    def __mul__(self, other: Rotation) -> Rotation:
+        return Rotation(
+            w=self.w * other.w,
+            x=self.x * other.x,
+            y=self.y * other.y,
+            z=self.z * other.z,
+        )
 
     def quat(self, convention: str = 'wxyz') -> typing.List[float]:
         return [float(getattr(self, axis)) for axis in convention if axis in 'wxyz']
@@ -103,6 +133,20 @@ class Scale:
     y: float
     z: float
 
+    def __add__(self, other: Scale) -> Scale:
+        return Scale(
+            x=self.x + other.x,
+            y=self.y + other.y,
+            z=self.z + other.z,
+        )
+
+    def __mul__(self, other: float) -> Scale:
+        return Scale(
+            x=self.x * other,
+            y=self.y * other,
+            z=self.z * other,
+        )
+
     def tuple(self) -> typing.Tuple[float, float, float]:
         return self.x, self.y, self.z
 
@@ -142,8 +186,10 @@ class Scale:
 
 def move(
     prim_path: str,
+    *,
     translation: Translation | None = None,
     rotation: Rotation | None = None,
+    local: bool = False,
 ):
     stage = get_current_stage()
     prim = stage.GetPrimAtPath(prim_path)
@@ -171,10 +217,16 @@ def move(
     if target is None:
         target = XFormPrim(prim_path)
 
-    target.set_world_pose(
-        position=translation.tuple() if translation is not None else None,
-        orientation=rotation.quat() if rotation is not None else None
-    )
+    if local:
+        target.set_local_pose(
+            translation=translation.tuple() if translation is not None else None,
+            orientation=rotation.quat() if rotation is not None else None
+        )
+    else:
+        target.set_world_pose(
+            position=translation.tuple() if translation is not None else None,
+            orientation=rotation.quat() if rotation is not None else None
+        )
 
 
 def rescale(
@@ -188,4 +240,5 @@ def rescale(
         return
 
     xform_prim = XFormPrim(prim_path)
+
     xform_prim.set_local_scale(scale.tuple())

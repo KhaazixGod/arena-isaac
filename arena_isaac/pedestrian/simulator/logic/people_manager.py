@@ -156,9 +156,6 @@ class PeopleManager:
         with cls._lock:
             if cls._instance is None:
                 cls._instance = object.__new__(cls)
-            else:
-                carb.log_info("People Manager is defined already, returning the previously defined one")
-
             return cls._instance
 
     def __del__(self):

@@ -20,26 +20,6 @@ except Exception:
     _LOGGER = None
 
 
-def _log_info(msg: str):
-    try:
-        if _LOGGER:
-            _LOGGER.info(msg)
-            return
-    except Exception:
-        pass
-    print(msg)
-
-
-def _log_debug(msg: str):
-    try:
-        if _LOGGER:
-            _LOGGER.debug(msg)
-            return
-    except Exception:
-        pass
-    print(msg)
-
-
 @on_exception(False)
 def spawn_pedestrian(pedestrian: Pedestrian) -> bool:
     world = World.instance()
