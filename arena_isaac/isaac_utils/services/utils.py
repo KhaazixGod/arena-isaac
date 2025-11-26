@@ -1,4 +1,6 @@
-import sys
+import traceback
+
+import carb
 import rclpy.node
 
 
@@ -8,7 +10,7 @@ def on_exception(value):
             try:
                 return fun(*args, **kwargs)
             except Exception as e:
-                print(f"Error in {fun.__name__}: {e}", file=sys.stderr)
+                carb.log_error(f"Error in {fun.__name__}: {e}\n{traceback.format_exc()}")
                 return value
         return wrapper
     return inner

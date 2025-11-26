@@ -2,6 +2,7 @@ import os
 import sys
 from pathlib import Path
 
+import carb
 import omni.kit.commands as commands
 
 import isaac_utils.graphs.joint_states as joint_states
@@ -15,7 +16,6 @@ from isaac_utils.utils.prim import ensure_path
 from isaacsim_msgs.srv import SpawnUrdf
 
 from .utils import Service, on_exception
-
 
 parent_dir = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(parent_dir))
@@ -59,32 +59,36 @@ def spawn_urdf(request: SpawnUrdf.Request) -> str:
 
     # print(usd_path)
     if request.localization:
-        odom.odom(
+        if not odom.odom(
             os.path.join(prim_path, 'odom_publisher'),
             prim_path=os.path.join(prim_path, request.base_frame),
             base_frame_id=os.path.join(request.tf_prefix, request.base_frame),
             odom_frame_id=os.path.join(request.tf_prefix, request.odom_frame),
-        )
+        ):
+            carb.log_error("Failed to create odom graph")
 
-    tf.tf(
+    if not tf.tf(
         os.path.join(prim_path, 'tf_publisher'),
         prim_path=os.path.join(prim_path, request.base_frame),
         tf_prefix=request.tf_prefix,
-    )
+    ):
+        carb.log_error("Failed to create tf graph")
 
-    joint_states.joint_states(
+    if not joint_states.joint_states(
         os.path.join(prim_path, 'joint_states_publisher'),
         prim_path=os.path.join(prim_path, request.base_frame),
         joint_states_topic=request.joint_states_topic,
-    )
+    ):
+        carb.log_error("Failed to create joint_states graph")
 
     if request.cmd_vel_topic:
-        control.Control(
+        if not control.Control(
             prim_path=prim_path,
             cmd_vel_topic=request.cmd_vel_topic,
         ).parse(
             robot_model=robot_model,
-        )
+        ):
+            carb.log_error("Failed to create control graph")
 
     with open(request.urdf_path, 'r') as f:
         sensors.Sensors(
