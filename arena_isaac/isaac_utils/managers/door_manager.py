@@ -78,7 +78,10 @@ class XFormAnimation:
         self._time = now
         if reverse:
             dt *= -1
+        previous = self._progress
         self._progress = max(min(self._progress + dt / self.duration, 1.), 0.)
+        if previous == self._progress:
+            return None, None, None
         point = self.animation_fn(self._progress)
         return self._interp_T(point), self._interp_R(point), self._interp_S(point)
 
@@ -388,7 +391,6 @@ class DoorManager:
                                     carb.log_verbose(f"Resolved entity prim for distance checks: {entity_path} -> {resolved_path}")
                                     entity_path = resolved_path
                         if not (entity_prim and entity_prim.IsValid()):
-                            carb.log_warn(f"Entity prim invalid or missing: {entity_path}")
                             continue
                         entity_pos = self._get_prim_position(entity_prim)
                         dist = float(np.linalg.norm(door_pos - entity_pos))
