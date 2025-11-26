@@ -201,18 +201,8 @@ def move(
     if prim.HasAPI(UsdPhysics.ArticulationRootAPI):
         target = Articulation(prim_path)
 
-    if target is not None:  # i am an articulation
-        dof = target.num_dof
-        target.set_joint_positions(positions=np.zeros(dof, dtype="float32"))
-        target.set_joint_velocities(velocities=np.zeros(dof, dtype="float32"))
-        target.wake_up()
-
-    elif prim.HasAPI(UsdPhysics.RigidBodyAPI):
+    if target is None and prim.HasAPI(UsdPhysics.RigidBodyAPI):
         target = RigidPrim(prim_path)
-
-    if target is not None:  # i am an articulation / rigidbody
-        target.set_linear_velocity([0, 0, 0])
-        target.set_angular_velocity([0, 0, 0])
 
     if target is None:
         target = XFormPrim(prim_path)
