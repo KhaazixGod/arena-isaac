@@ -75,7 +75,7 @@ class Material:
         :param name: The name of the material to load.
         :return: The loaded material, or None if the material could not be loaded.
         """
-        material_path = world_path('Looks', 'Material', name)
+        material_path = world_path('Looks', 'Material', f'{name}_{str(hash(path))[8:16]}')
 
         basename, *ref = path.name.split('::', 1)
 
