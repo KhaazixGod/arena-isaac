@@ -99,10 +99,6 @@ class Person:
         # Spawn the agent in the world
         self.spawn_agent(self.char_usd_file, self._stage_prefix, init_pos, init_yaw)
 
-        # Add the animation graph to the agent, such that it can move around
-        self.character_graph = None
-        self.add_animation_graph_to_agent()
-
         # Set the controller for the person if any and initialize it
         self._controller = controller
         if self._controller:
@@ -125,6 +121,20 @@ class Person:
 
         # Add a callback to start/stop of the simulation once the play/stop button is hit
         self._world.add_timeline_callback(self._stage_prefix + "/start_stop_sim", self.sim_start_stop)
+
+        self._character_graph = None
+
+    @property
+    def character_graph(self):
+        """The animation graph of the person.
+
+        Returns:
+            CharacterGraph: The animation graph of the person.
+        """
+        if self._character_graph is None:
+            self.add_animation_graph_to_agent()
+            self._character_graph = ag.get_character(self.character_skel_root_stage_path)
+        return self._character_graph
 
     @property
     def state(self):
@@ -175,8 +185,9 @@ class Person:
         """
 
         # Note: this is done to avoid the error of the character_graph being None. The animation graph is only created after the simulation starts
-        if not self.character_graph or self.character_graph is None:
-            self.character_graph = ag.get_character(self.character_skel_root_stage_path)
+        if not self.character_graph:
+            # failed to acquire character graph
+            return
 
         # Call the controller update method that should update the reference of the target position
         if self._controller:
@@ -234,9 +245,9 @@ class Person:
             dt (float): The time elapsed between the previous and current function calls (s).
         """
 
-        # Note: this is done to avoid the error of the character_graph being None. The animation graph is only created after the simulation starts
-        if not self.character_graph or self.character_graph is None:
-            self.character_graph = ag.get_character(self.character_skel_root_stage_path)
+        if not self.character_graph:
+            # failed to acquire character graph
+            return
 
         # Get the current position of the person
         pos = carb.Float3(0, 0, 0)

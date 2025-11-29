@@ -22,9 +22,11 @@ simulation_app = SimulationApp(CONFIG)
 parent_dir = Path(__file__).resolve().parent.parent
 sys.path.insert(0,str(parent_dir))
 
+# stdlib
+import random
+import traceback
 
 # Import Isaac Sim dependencies
-import random
 
 import carb
 import omni.kit.commands as commands
@@ -72,7 +74,6 @@ simulation_app.update()
 # -------------------------------------------------------------------------------------------------
 omni.usd.get_context().new_stage()
 
-extensions.disable_extension("omni.isaac.ros_bridge")
 extensions.enable_extension("omni.isaac.ros2_bridge")
 
 import random
@@ -86,7 +87,11 @@ import omni.anim.graph.core as ag
 import omni.anim.navigation.core as nav
 import omni.replicator.core as rep
 import omni.syntheticdata._syntheticdata as sd
+
+# rclpy
 import rclpy
+import rclpy.node
+import std_srvs.srv
 
 # graphs
 from isaac_utils.graphs.time import PublishTime
@@ -94,7 +99,7 @@ from isaac_utils.managers.door_manager import door_manager
 from isaac_utils.managers.elevator_manager import elevator_manager
 
 #Import services
-from isaac_utils.services import services
+from .services import services
 from pedestrian.simulator.logic.people_manager import PeopleManager
 from rclpy.qos import QoSProfile
 
@@ -173,28 +178,53 @@ simulation_app.update()
 # create controller node for isaacsim.
 
 
-def create_controller(time=120):
-    rclpy.init()
-    controller = rclpy.create_node("isaac_controller")
+class IsaacController(rclpy.node.Node):
+    def __init__(self, *args, **kwargs):
+        super().__init__(node_name="isaac", *args, **kwargs)
+        self._running = False
+        self._should_step_once = False
 
-    PublishTime('/World/publish_time')
-    for service in services:
-        service.create(controller, qos_profile=QoSProfile(depth=2000))
-    # Let the DoorManager subscribe to ROS topics on this controller node
-    try:
-        door_manager.register_node(controller)
-    except Exception as e:
-        controller.get_logger().warning(f'Failed to register DoorManager with controller: {e}')
-    # Enable per-entity logging and filter to show only jackal-related outputs
-    try:
-        door_manager._log_every_tick = False
-        door_manager._log_entity_filter = ['jackal']
-        controller.get_logger().info('DoorManager per-tick logging enabled (filter=jackal)')
-    except Exception as e:
-        controller.get_logger().warning(f'Failed to set DoorManager logging flags: {e}')
-    return controller
+        self.__pause_srv = self.create_service(
+            std_srvs.srv.Trigger,
+            os.path.join('isaac/PauseSimulation'),
+            self._cb_pause,
+        )
+        self.__unpause_srv = self.create_service(
+            std_srvs.srv.Trigger,
+            os.path.join('isaac/UnpauseSimulation'),
+            self._cb_unpause,
+        )
+        self.__step_srv = self.create_service(
+            std_srvs.srv.Trigger,
+            os.path.join('isaac/StepSimulation'),
+            self._cb_step,
+        )
 
-# =================================================================================
+    def _cb_pause(self, request: std_srvs.srv.Trigger.Request, response: std_srvs.srv.Trigger.Response):
+        self._running = False
+        response.success = True
+        return response
+
+    def _cb_unpause(self, request: std_srvs.srv.Trigger.Request, response: std_srvs.srv.Trigger.Response):
+        self._running = True
+        response.success = True
+        return response
+
+    def _cb_step(self, request: std_srvs.srv.Trigger.Request, response: std_srvs.srv.Trigger.Response):
+        self._should_step_once = True
+        response.success = True
+        return response
+
+    @property
+    def _step_once(self) -> bool:
+        v = self._should_step_once
+        self._should_step_once = False
+        return v
+
+    @property
+    def running(self):
+        return self._step_once or self._running
+
 
 # ======================================main=======================================
 
@@ -205,11 +235,29 @@ def main(args=None):
     and run the simulation loop.
     """
 
-    # Handle log level if provided in args
+    sim = SimulationContext()
 
-    # Create the ROS 2 controller node. This also calls rclpy.init().
-    controller = create_controller()
+    rclpy.init()
+
+    controller = IsaacController()
+    for service in services:
+        service.create(controller, qos_profile=QoSProfile(depth=2000))
+
+    PublishTime('/World/publish_time')
     world.reset()
+    world.pause()
+
+    try:
+        door_manager.register_node(controller)
+    except Exception as e:
+        controller.get_logger().warning(f'Failed to register DoorManager with controller: {e}')
+
+    try:
+        # TODO refactor
+        door_manager._log_every_tick = False
+        door_manager._log_entity_filter = ['jackal']
+    except Exception as e:
+        controller.get_logger().warning(f'Failed to set DoorManager logging flags: {e}')
 
     # set photoreal settings
     import isaac_utils.config.photoreal as photoreal
@@ -218,33 +266,31 @@ def main(args=None):
     else:
         photoreal.PRESET_DEFAULT.apply()
 
-    SimulationContext().play()
-
+    # mainloop
+    was_playing: bool = False
     try:
-        # Main simulation loop
         while simulation_app.is_running():
-            # Step the simulation
-            simulation_app.update()
-
-            # Update door logic
-            door_manager.update()
-
-            # Update elevator logic
-            elevator_manager.update()
-
-            # Tick the ROS 2 node
-            rclpy.spin_once(controller, timeout_sec=0.0)
+            rclpy.spin_once(controller, timeout_sec=0)
+            if controller.running:
+                if not was_playing:
+                    world.play()
+                    was_playing = True
+                door_manager.update()
+                elevator_manager.update()
+                world.step(render=True)
+            else:
+                if was_playing:
+                    world.pause()
+                    was_playing = False
+                simulation_app.update()
 
     except KeyboardInterrupt:
         controller.get_logger().info('Received KeyboardInterrupt, shutting down.')
     except Exception as e:
         controller.get_logger().error(f'Exception in main loop: {e}')
-        import traceback
-        import sys
         controller.get_logger().error(traceback.format_exc())
         traceback.print_exc(file=sys.stdout)
     finally:
-        # Cleanly shut down the simulation and ROS 2
         controller.get_logger().info('Shutting down ROS 2 node and simulation.')
         controller.destroy_node()
         rclpy.shutdown()

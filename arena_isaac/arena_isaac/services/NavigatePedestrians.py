@@ -14,7 +14,8 @@ def navigate_pedestrian(goal: PedestrianGoal) -> bool:
     usd_path = world_path(goal.name)
 
     person = PeopleManager.get_people_manager().get_person(usd_path)
-    assert isinstance(person, Person), f"Person not found for path: {usd_path}"
+    if not isinstance(person, Person):
+        return False
     inav = nav.acquire_interface()
     navmesh = inav.get_navmesh()
     if navmesh:

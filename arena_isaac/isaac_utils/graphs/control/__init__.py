@@ -24,7 +24,7 @@ class Control:
         Returns:
             bool: True if the graph was created successfully, False otherwise.
         """
-        robot = arena_robots.Robot.RobotLoader(robot_model)
+        robot = arena_robots.Robot.RobotIdentifier(robot_model).resolve_sync()
 
         for controller_name, config in robot.control['controller_manager']['ros__parameters'].items():
             if isinstance(config, dict) and config.get('type') == 'diff_drive_controller/DiffDriveController':

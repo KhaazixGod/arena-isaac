@@ -74,7 +74,7 @@ def spawn_door(door: Door) -> bool:
         # If create resulted in a deeper prim, pick the first found prim as door_prim_path
         door_prim_path = prim_path if (created and created.IsValid()) else (found[0] if found else prim_path)
     except Exception as e:
-        _log_warn(f"DEBUG SpawnDoor: diagnostics failed: {e}")
+        carb.log_warn(f"DEBUG SpawnDoor: diagnostics failed: {e}")
         door_prim_path = prim_path
         return False
 
