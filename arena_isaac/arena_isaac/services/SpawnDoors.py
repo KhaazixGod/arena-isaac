@@ -5,7 +5,7 @@ import carb
 import numpy as np
 import omni
 
-from isaac_utils.managers.door_manager import door_manager
+from isaac_utils.managers.door_manager import DoorManager
 from isaac_utils.utils.geom import Rotation, Scale, Translation
 from isaac_utils.utils.material import Material
 from isaac_utils.utils.mesh import create_cube
@@ -84,7 +84,7 @@ def spawn_door(door: Door) -> bool:
     # Register the actual prim path with DoorManager
     try:
         carb.log_info(f"DEBUG SpawnDoor: registering door prim with DoorManager: {door_prim_path}")
-        door_manager.register_door(door_prim_path, kind, start, end)
+        DoorManager.instance().register_door(door_prim_path, kind, start, end)
     except Exception as e:
         import traceback
         carb.log_error(f"SpawnDoor: failed to register door: {e}\n{traceback.format_exc()}")

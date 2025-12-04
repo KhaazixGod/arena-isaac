@@ -3,16 +3,17 @@ import sys
 from pathlib import Path
 
 import carb
-import omni.kit.commands as commands
-
 import isaac_utils.graphs.joint_states as joint_states
 import isaac_utils.graphs.odom as odom
 import isaac_utils.graphs.sensors.sensors as sensors
 import isaac_utils.graphs.tf as tf
+import omni.kit.commands as commands
 from isaac_utils.graphs import control
+from isaac_utils.managers.door_manager import DoorManager
 from isaac_utils.utils import geom
 from isaac_utils.utils.path import world_path
 from isaac_utils.utils.prim import ensure_path
+
 from isaacsim_msgs.srv import SpawnUrdf
 
 from .utils import Service, on_exception
@@ -64,6 +65,7 @@ def spawn_urdf(request: SpawnUrdf.Request) -> str:
             prim_path=os.path.join(prim_path, request.base_frame),
             base_frame_id=os.path.join(request.tf_prefix, request.base_frame),
             odom_frame_id=os.path.join(request.tf_prefix, request.odom_frame),
+            odom_topic=request.odom_topic,
         ):
             carb.log_error("Failed to create odom graph")
 
@@ -74,12 +76,13 @@ def spawn_urdf(request: SpawnUrdf.Request) -> str:
     ):
         carb.log_error("Failed to create tf graph")
 
-    if not joint_states.joint_states(
-        os.path.join(prim_path, 'joint_states_publisher'),
-        prim_path=os.path.join(prim_path, request.base_frame),
-        joint_states_topic=request.joint_states_topic,
-    ):
-        carb.log_error("Failed to create joint_states graph")
+    if request.joint_states_topic:
+        if not joint_states.joint_states(
+            os.path.join(prim_path, 'joint_states_publisher'),
+            prim_path=os.path.join(prim_path, request.base_frame),
+            joint_states_topic=request.joint_states_topic,
+        ):
+            carb.log_error("Failed to create joint_states graph")
 
     if request.cmd_vel_topic:
         if not control.Control(
@@ -102,6 +105,8 @@ def spawn_urdf(request: SpawnUrdf.Request) -> str:
         translation=geom.Translation.parse(request.pose.position),
         rotation=geom.Rotation.parse(request.pose.orientation),
     )
+
+    DoorManager.instance().add_robot(prim_path, request.odom_topic)
 
     return prim_path
 

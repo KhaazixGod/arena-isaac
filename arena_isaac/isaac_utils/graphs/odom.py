@@ -14,6 +14,7 @@ def odom(
     base_frame_id: str = 'base_link',
     odom_frame_id: str = 'odom',
     map_frame_id: str = 'map',
+    odom_topic: str = '',
 ) -> bool:
     """
     Creates an OmniGraph Action Graph to publish nav2 - type odometry information for a given prim
@@ -61,5 +62,15 @@ def odom(
     publish_map.attribute('childFrameId', odom_frame_id)
     publish_map.attribute('translation', [0., 0., 0.])
     publish_map.attribute('rotation', [0., 0., 0., 1.])
+
+    if odom_topic:
+        publish_odom_topic = graph.node('publish_odom_topic', 'omni.isaac.ros2_bridge.ROS2PublishOdometry')
+        on_playback_tick.connect('tick', publish_odom_topic, 'execIn')
+        read_simulation_time.connect('simulationTime', publish_odom_topic, 'timeStamp')
+        publish_odom_topic.attribute('topicName', odom_topic)
+        publish_odom_topic.attribute('odomFrameId', odom_frame_id)
+        publish_odom_topic.attribute('chassisFrameId', base_frame_id)
+        extract_translation.connect('translation', publish_odom_topic, 'position')
+        extract_rotation.connect('quaternion', publish_odom_topic, 'orientation')
 
     return graph.execute(controller)

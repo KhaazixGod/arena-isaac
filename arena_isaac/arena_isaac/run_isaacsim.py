@@ -95,7 +95,7 @@ import std_srvs.srv
 
 # graphs
 from isaac_utils.graphs.time import PublishTime
-from isaac_utils.managers.door_manager import door_manager
+from isaac_utils.managers.door_manager import DoorManager
 from isaac_utils.managers.elevator_manager import elevator_manager
 
 #Import services
@@ -240,24 +240,13 @@ def main(args=None):
     rclpy.init()
 
     controller = IsaacController()
+    door_manager = DoorManager.instance(controller)
     for service in services:
         service.create(controller, qos_profile=QoSProfile(depth=2000))
 
     PublishTime('/World/publish_time')
     world.reset()
     world.pause()
-
-    try:
-        door_manager.register_node(controller)
-    except Exception as e:
-        controller.get_logger().warning(f'Failed to register DoorManager with controller: {e}')
-
-    try:
-        # TODO refactor
-        door_manager._log_every_tick = False
-        door_manager._log_entity_filter = ['jackal']
-    except Exception as e:
-        controller.get_logger().warning(f'Failed to set DoorManager logging flags: {e}')
 
     # set photoreal settings
     import isaac_utils.config.photoreal as photoreal

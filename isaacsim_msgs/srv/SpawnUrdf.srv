@@ -7,6 +7,7 @@ string odom_frame
 geometry_msgs/Pose pose
 string cmd_vel_topic
 string joint_states_topic
+string odom_topic
 bool localization true
 ---
 string path

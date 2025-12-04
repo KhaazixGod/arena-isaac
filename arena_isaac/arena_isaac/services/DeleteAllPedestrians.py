@@ -1,6 +1,6 @@
 from pedestrian.simulator.logic.people_manager import PeopleManager
 
-from isaac_utils.managers.door_manager import door_manager
+from isaac_utils.managers.door_manager import DoorManager
 from isaacsim_msgs.srv import DeletePrims
 
 from .DeletePrims import delete_prims_callback
@@ -9,7 +9,7 @@ from .utils import Service, on_exception
 
 @on_exception(False)
 def reset_managers() -> bool:
-    door_manager.reset()
+    DoorManager.instance().reset()
     PeopleManager.get_people_manager().remove_all_people()
     return True
 
