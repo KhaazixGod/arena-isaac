@@ -1,6 +1,6 @@
 import collections.abc
 
-from .DeleteAllPedestrians import delete_all_pedestrians_service
+from .DeletePedestrians import delete_pedestrians_service
 from .DeletePrims import delete_prims_service
 from .EditPrims import edit_prims_service
 from .GetPrims import get_prims_service
@@ -16,7 +16,7 @@ from .SpawnWalls import spawn_walls_service
 from .utils import Service
 
 services: collections.abc.Iterable[Service] = (
-    delete_all_pedestrians_service,
+    delete_pedestrians_service,
     delete_prims_service,
     edit_prims_service,
     get_prims_service,

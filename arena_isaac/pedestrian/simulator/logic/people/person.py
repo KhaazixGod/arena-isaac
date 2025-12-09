@@ -4,22 +4,21 @@ import os
 import carb
 import numpy as np
 import omni.anim.graph.core as ag
+
 # High level Isaac sim APIs
 import omni.client
+from isaac_utils.utils.assets import get_assets_root_path_safe
 from omni.anim.people import PeopleSettings
 from omni.isaac.core.utils import prims
-from isaac_utils.utils.assets import get_assets_root_path_safe
-
 from omni.usd import get_stage_next_free_path
-from pedestrian.simulator.logic.interface.pedestrian_interface import \
-    PedestrianInterface
-from pedestrian.simulator.logic.people.person_controller import \
-    PersonController
-from pedestrian.simulator.logic.people_manager import PeopleManager
-# Extension APIs
-from pedestrian.simulator.logic.state import State
 from pxr import Gf, Sdf
 from scipy.spatial.transform import Rotation
+
+from pedestrian.simulator.logic.people.person_controller import PersonController
+from pedestrian.simulator.logic.people_manager import PeopleManager
+
+# Extension APIs
+from pedestrian.simulator.logic.state import State
 
 
 class Person:
@@ -42,7 +41,7 @@ class Person:
         root_path = get_assets_root_path_safe()
         assets_root_path = os.path.join(root_path, 'Isaac/People/Characters')
 
-    character_skel_root_stage_path: str | None
+    character_skel_root_stage_path: str
 
     def __init__(
         self,
@@ -84,11 +83,7 @@ class Person:
 
         # Save the name with which the vehicle will appear in the stage
         # and the character model that will be loaded into the simulator
-        self._stage_prefix = get_stage_next_free_path(
-            self._current_stage,
-            os.path.join(Person.character_root_prim_path, stage_prefix),
-            False
-        )
+        self._stage_prefix = stage_prefix
 
         # The name of the character in the USD file
         self._character_name = character_name
@@ -110,17 +105,20 @@ class Person:
             self._backend.initialize(self)
 
         # Add a callback to the physics engine to update the current state of the person
-        self._world.add_physics_callback(self._stage_prefix + "/state", self.update_state)
+        if not self._world.physics_callback_exists(cb_path := self._stage_prefix + "/state"):
+            self._world.add_physics_callback(cb_path, self.update_state)
 
         # Add the update method to the physics callback if the world was received
         # so that we can apply the new references to be tracked by the person
-        self._world.add_physics_callback(self._stage_prefix + "/update", self.update)
+        if not self._world.physics_callback_exists(cb_path := self._stage_prefix + "/update"):
+            self._world.add_physics_callback(cb_path, self.update)
 
         # Set the flag that signals if the simulation is running or not
         self._sim_running = False
 
         # Add a callback to start/stop of the simulation once the play/stop button is hit
-        self._world.add_timeline_callback(self._stage_prefix + "/start_stop_sim", self.sim_start_stop)
+        if not self._world.timeline_callback_exists(cb_path := self._stage_prefix + "/start_stop_sim"):
+            self._world.add_timeline_callback(cb_path, self.sim_start_stop)
 
         self._character_graph = None
 
@@ -286,10 +284,12 @@ class Person:
 
         # Get the Skeleton root of the character
         self.character_skel_root, root_path = Person._transverse_prim(self._current_stage, self._stage_prefix)
+        if root_path is None:
+            raise RuntimeError(f"Could not find SkelRoot for character {self._character_name} at stage prefix {self._stage_prefix}")
         self.character_skel_root_stage_path = root_path
 
         # Add the current person to the person manager
-        PeopleManager.get_people_manager().add_person(self.character_skel_root_stage_path, self)
+        PeopleManager.get_people_manager().add_person(self._stage_prefix, self)
 
     def add_animation_graph_to_agent(self):
 
@@ -377,3 +377,22 @@ class Person:
                 return item.relative_path
 
         carb.log_error("Unable to file a .usd file in {} character folder".format(character_folder_path))
+
+    def destroy(self):
+        """
+        Method that will delete the person from the simulation world.
+        """
+
+        # Remove the physics callback
+        self._world.remove_physics_callback(self._stage_prefix + "/state")
+        self._world.remove_physics_callback(self._stage_prefix + "/update")
+
+        # Remove the timeline callback
+        self._world.remove_timeline_callback(self._stage_prefix + "/start_stop_sim")
+
+        # Delete the prim from the stage
+        prims.delete_prim(self._stage_prefix)
+
+        # Remove the person from the people manager
+        if (path := self.character_skel_root_stage_path) is not None:
+            PeopleManager.get_people_manager().remove_person(path)

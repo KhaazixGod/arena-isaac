@@ -1,7 +1,9 @@
-from threading import Lock
+import threading
+import typing
 
-import carb
 import omni.kit.commands
+
+from typing_extensions import Self
 
 
 class PeopleManager:
@@ -15,14 +17,14 @@ class PeopleManager:
     """
 
     # The object instance of the people Manager
-    _instance = None
+    _instance: typing.ClassVar[typing.Optional[Self]] = None
     _is_initialized = False
 
     # A dictionary of people that are spawned in the simulator
     _people = {}
 
     # Lock for safe multi-threading
-    _lock: Lock = Lock()
+    _lock: typing.ClassVar[threading.RLock] = threading.RLock()
 
     def __init__(self):
         """
@@ -32,24 +34,18 @@ class PeopleManager:
         # Rebuild the navigation mesh using the standard settings
         self.rebuild_nav_mesh()
 
-    """
-    Properties
-    """
-
+    # Properties
     @property
     def people(self):
         """
         Returns:
             (list) List of people that were spawned.
         """
-        return PeopleManager._people
+        return self._people
 
-    """
-    Operations
-    """
-
+    # Operations
     @classmethod
-    def get_people_manager(cls) -> "PeopleManager":
+    def get_people_manager(cls) -> Self:
         """
         Method that returns the current people manager.
         """
@@ -63,7 +59,8 @@ class PeopleManager:
             stage_prefix (str): A string with the name that the person is spawned in the simulator
             person (Person): The person object being added to the person manager.
         """
-        PeopleManager._people[stage_prefix] = person
+        with self._lock:
+            self._people[stage_prefix] = person
 
     def get_person(self, stage_prefix: str):
         """Method that returns the person object given its stage prefix. Returns None if there is no person
@@ -75,7 +72,8 @@ class PeopleManager:
         Returns:
             Person: The person object associated with the stage_prefix
         """
-        return PeopleManager._people.get(stage_prefix, None)
+        with self._lock:
+            return self._people.get(stage_prefix, None)
 
     def remove_person(self, stage_prefix: str):
         """
@@ -84,17 +82,17 @@ class PeopleManager:
         Args:
             stage_prefix (str): A string with the name that the person is spawned in the simulator.
         """
-        try:
-            PeopleManager._people.pop(stage_prefix)
-        except BaseException:
-            pass
+        with self._lock:
+            if stage_prefix in self._people:
+                self._people.pop(stage_prefix).destroy()
 
     def remove_all_people(self):
         """
         Method that will delete all the people that were spawned from the people manager.
         """
-
-        PeopleManager._people.clear()
+        with self._lock:
+            for person in list(self._people.values()):
+                person.destroy()
 
     @classmethod
     def rebuild_nav_mesh(cls, height=1.5, radius=35.0, auto_rebake_on_changes=False, auto_rebake_delay_seconds=4, exclude_rigid_bodies=False, view_nav_mesh=False, dynamic_avoidance_enabled=True, navmesh_enabled=True):
