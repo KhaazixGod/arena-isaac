@@ -9,7 +9,7 @@ from .utils import Service, on_exception
 
 @on_exception(False)
 def reset_managers() -> bool:
-    DoorManager.instance().reset()
+    DoorManager.instance().reset_peds()
     PeopleManager.get_people_manager().remove_all_people()
     return True
 
