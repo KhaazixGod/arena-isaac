@@ -385,6 +385,10 @@ class Person:
             PeopleManager.get_people_manager().remove_person(path)
 
     @property
+    def position(self) -> np.ndarray:
+        return self._state.position
+
+    @property
     def _target_position(self) -> np.ndarray:
         if not self._target_positions:
             return np.array(self._state.position)
@@ -395,3 +399,7 @@ class Person:
         if not self._target_positions:
             return np.array(self._state.position)
         return np.array(self._target_positions[-1])
+
+    @property
+    def path(self) -> str:
+        return self._stage_prefix
