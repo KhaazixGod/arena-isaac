@@ -17,6 +17,7 @@ def prim_importer(prim_msg: Prim) -> bool:
         position=np.array(geom.Translation.parse(prim_msg.pose.position).tuple()),
         orientation=np.array(geom.Rotation.parse(prim_msg.pose.orientation).quat()),
         usd_path=usd_path,
+        scale=np.array([prim_msg.scale.x, prim_msg.scale.y, prim_msg.scale.z]),
     )
 
     return True
